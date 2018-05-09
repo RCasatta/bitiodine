@@ -1,7 +1,7 @@
 use preamble::*;
 
 pub struct DumpBalances {
-    balances: HashMap<(Address, Option<Hash160>), i64>,
+    pub balances: HashMap<(Address, Option<Hash160>), i64>,
     writer: LineWriter<File>,
 }
 

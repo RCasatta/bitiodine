@@ -36,8 +36,9 @@ use env_logger::Builder;
 use log::LevelFilter;
 use visitors::clusterizer::Clusterizer;
 use visitors::BlockChainVisitor;
-//use visitors::dump_balances::DumpBalances;
+use visitors::dump_balances::DumpBalances;
 //use visitors::dump_tx_hashes::DumpTxHashes;
+use preamble::*;
 
 use std::io::Write;
 
@@ -60,28 +61,40 @@ fn main() {
     initialize_logger();
     let chain = unsafe { BlockChain::read() };
 
-    /*
-    let (_, _, _) = chain
-        .walk(&mut visitors::dump_tx_hashes::DumpTxHashes)
-        .unwrap();
-    */
+    let mut balances = HashMap::new();
+    {
+        let mut balances_visitor = DumpBalances::new();
+        let (_, _, _) = chain.walk(&mut balances_visitor).unwrap();
+        for (address_tuple, balance) in &balances_visitor.balances {
+
+            if *balance == 0 {
+                continue;
+            }
+            let address = &address_tuple.0;
+            balances.insert(address.to_owned(),balance.to_owned());
+        }
+    }
 
     let mut clusterizer_visitor = Clusterizer::new();
     let (_, _, _) = chain.walk(&mut clusterizer_visitor).unwrap();
-    let _clusters_count = clusterizer_visitor.done();
 
-    /*
-    let (_, _, map) = chain.walk(&mut visitors::dataoutput_finder::DataOutputFinder).unwrap();
-    for (tx, payload) in map.into_iter() {
-        for (tx_id, data) in payload.into_iter() {
-            println!("{},{},{}", tx, tx_id, data);
-        }
+    let mut writer = LineWriter::new(OpenOptions::new().write(true).create(true).truncate(true).open(Path::new("clusters_bal.csv.tmp")).unwrap());
+
+    let mut clusters = clusterizer_visitor.clusters;
+    clusters.finalize();
+    info!("Exporting {} clusters and balances to CSV...", clusters.size());
+
+
+    for (address, tag) in &clusters.map {
+        writer.write_all(format!("{},{},{}\n",
+                                 address,
+                                 clusters.parent[*tag],
+                                 balances.get(address).unwrap_or(&&0i64)).as_bytes()
+        ).unwrap();
     }
-    */
 
-    /*
-    let mut balances_visitor = DumpBalances::new();
-    let (_, _, _) = chain.walk(&mut balances_visitor).unwrap();
-    let _ = balances_visitor.done();
-    */
+    fs::rename(Path::new("clusters_bal.csv.tmp"), Path::new("clusters_bal.csv")).unwrap();
+    info!("Exported {} clusters to CSV.", clusters.size());
+
+
 }

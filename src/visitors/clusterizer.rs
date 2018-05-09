@@ -4,16 +4,16 @@ use std::hash::Hash;
 use std::result;
 
 pub struct Clusterizer {
-    clusters: DisjointSet<Address>,
+    pub clusters: DisjointSet<Address>,
     writer: LineWriter<File>,
 }
 
 /// Tarjan's Union-Find data structure.
 pub struct DisjointSet<T: Clone + Hash + Eq> {
     set_size: usize,
-    parent: Vec<usize>,
+    pub parent: Vec<usize>,
     rank: Vec<usize>,
-    map: HashMap<T, usize>, // Each T entry is mapped onto a usize tag.
+    pub map: HashMap<T, usize>, // Each T entry is mapped onto a usize tag.
 }
 
 impl<T> DisjointSet<T>
@@ -184,4 +184,7 @@ impl<'a> BlockChainVisitor<'a> for Clusterizer {
         info!("Exported {} clusters to CSV.", self.clusters.size());
         Ok(self.clusters.size())
     }
+
+
 }
+
