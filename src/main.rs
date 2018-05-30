@@ -85,12 +85,25 @@ fn main() {
     info!("Exporting {} clusters and balances to CSV...", clusters.size());
 
 
+    let mut clusters_balances = HashMap::new();
     for (address, tag) in &clusters.map {
-        writer.write_all(format!("{},{},{}\n",
-                                 address,
-                                 clusters.parent[*tag],
-                                 balances.get(address).unwrap_or(&&0i64)).as_bytes()
-        ).unwrap();
+        let cluster=clusters.parent[*tag];
+        let balance = balances.get(address).unwrap_or(&0i64);
+        *clusters_balances.entry(cluster).or_insert(0)+=balance;
+    }
+
+    for (address, tag) in &clusters.map {
+        let cluster = clusters.parent[*tag];
+        let cluster_balance = clusters_balances.get(&cluster).unwrap_or(&0i64);
+        if cluster_balance > &0 {
+            writer.write_all(format!("{},{},{},{}\n",
+                                     address,
+                                     cluster,
+                                     balances.get(address).unwrap_or(&&0i64),
+                                     cluster_balance
+            ).as_bytes()
+            ).unwrap();
+        }
     }
 
     fs::rename(Path::new("clusters_bal.csv.tmp"), Path::new("clusters_bal.csv")).unwrap();
