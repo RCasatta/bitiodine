@@ -87,9 +87,11 @@ fn main() {
 
     let mut clusters_balances = HashMap::new();
     for (address, tag) in &clusters.map {
-        let cluster=clusters.parent[*tag];
         let balance = balances.get(address).unwrap_or(&0i64);
-        *clusters_balances.entry(cluster).or_insert(0)+=balance;
+        if *balance > 0 {
+            let cluster=clusters.parent[*tag];
+            *clusters_balances.entry(cluster).or_insert(0)+=balance;
+        }
     }
 
     for (address, tag) in &clusters.map {
